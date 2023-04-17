@@ -32,22 +32,29 @@ class Consumer(Thread):
         :type kwargs:
         :param kwargs: other arguments that are passed to the Thread's __init__()
         """
+
+        #init consumer variables
         self.carts = carts
         self.marketplace = marketplace
         self.retry_wait_time = retry_wait_time
         super().__init__(**kwargs)
 
     def run(self):
+
+        #for each cart, get a new cart id
         for cart in self.carts:
             cart_id = self.marketplace.new_cart()
 
+            #for each product in cart, check the type of action and perform it
             for product in cart:
                 if product["type"] == "add":
                     products_left = product["quantity"]
 
+                    #add product to cart until quantity is reached
                     while products_left > 0:
                         new = self.marketplace.add_to_cart(cart_id, product["product"])
 
+                        #if product is not found in marketplace, wait and try again
                         if new is False:
                             time.sleep(self.retry_wait_time)
 
@@ -55,8 +62,17 @@ class Consumer(Thread):
                             products_left -= 1
 
                 elif product["type"] == "remove":
-                    for i in range(product["quantity"]):
-                        self.marketplace.remove_from_cart(cart_id, product["product"])
-                        i += 1
+                    products_left = product["quantity"]
+
+                    #remove product from cart until quantity is reached
+                    while products_left > 0:
+                        new = self.marketplace.remove_from_cart(cart_id, product["product"])
+
+                        #if product is not found in cart, wait and try again
+                        if new is False:
+                            time.sleep(self.retry_wait_time)
+
+                        else:
+                            products_left -= 1    
 
             self.marketplace.place_order(cart_id)

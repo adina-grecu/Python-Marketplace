@@ -26,6 +26,7 @@ class Marketplace:
         :param queue_size_per_producer: the maximum size of a queue associated with each producer
         """
 
+        #init logger
         self.logger = logging.getLogger("marketplace_logger")
         self.logger.setLevel(logging.INFO)
         handler = RotatingFileHandler("marketplace.log", maxBytes=100000, backupCount=5)
@@ -36,6 +37,7 @@ class Marketplace:
         self.logger.addHandler(handler)
         self.logger.info("Marketplace initialized")
 
+        #init marketplace variables
         self.queue_size_per_producer = queue_size_per_producer
         self.shelf_sizes = {}
         self.producer_id_generator = 0
@@ -49,9 +51,14 @@ class Marketplace:
         """
         Returns an id for the producer that calls this.
         """
+       
         with self.producer_id_lock:
+
+            #generate new producer id
             self.producer_id_generator += 1
             prod_id = self.producer_id_generator
+
+            #add producer to marketplace, give producer a queue
             self.market[prod_id] = []
             self.shelf_sizes[prod_id] = self.queue_size_per_producer
 
@@ -72,15 +79,18 @@ class Marketplace:
         :returns True or False. If the caller receives False, it should wait and then try again.
         """
 
+        #check if producer has space in queue
         if len(self.market[producer_id]) < self.queue_size_per_producer:
+
+            #add product to producer's shelf, update shelf size
             self.market[producer_id].append(product)
             self.shelf_sizes[producer_id] -= 1
 
-            self.logger.info("Product published: %s", str(product))
+            self.logger.info("Product published: %s, queue size is %s", str(product), str(self.shelf_sizes[producer_id]))
 
             return True
 
-        self.logger.info("Product not published: %s", str(product))
+        self.logger.info("Not enough space to publish product: %s", str(product))
 
         return False
 
@@ -91,6 +101,8 @@ class Marketplace:
         :returns an int representing the cart_id
         """
         with self.cart_lock:
+
+            #generate new cart id, add cart to marketplace
             self.cart_generator += 1
             self.carts[self.cart_generator] = []
 
@@ -111,8 +123,11 @@ class Marketplace:
         :returns True or False. If the caller receives False, it should wait and then try again
         """
 
+        #search for product in marketplace
         for shelf, section in self.market.items():
             if product in section:
+
+                #remove product from shelf, add product to cart, update shelf size
                 section.remove(product)
                 self.carts[cart_id].append(product)
                 self.shelf_sizes[shelf] += 1
@@ -136,6 +151,7 @@ class Marketplace:
         :param product: the product to remove from cart
         """
 
+        #check if product is in cart, then remove it
         if product in self.carts[cart_id]:
             self.carts[cart_id].remove(product)
 
@@ -154,7 +170,11 @@ class Marketplace:
         :type cart_id: Int
         :param cart_id: id cart
         """
+
+        #create order from cart
         order = self.carts[cart_id]
+
+        #empty cart, then remove cart from marketplace
         self.carts[cart_id] = []
         self.carts.pop(cart_id)
 
@@ -210,6 +230,7 @@ class TestMarketplace(unittest.TestCase):
 
     def test_remove_from_cart(self):
         """Remove from cart test"""
+
         producer_id = self.marketplace.register_producer()
         self.marketplace.publish(producer_id, "product1")
         self.marketplace.publish(producer_id, "product2")
@@ -221,6 +242,7 @@ class TestMarketplace(unittest.TestCase):
 
     def test_place_order(self):
         """Place order test"""
+
         producer_id = self.marketplace.register_producer()
         self.marketplace.publish(producer_id, "product1")
         self.marketplace.publish(producer_id, "product2")
