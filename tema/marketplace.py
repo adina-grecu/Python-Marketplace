@@ -79,7 +79,7 @@ class Marketplace:
         :returns True or False. If the caller receives False, it should wait and then try again.
         """
 
-        #check if producer has space in queue
+        #check if producer has space on shelf
         if len(self.market[producer_id]) < self.queue_size_per_producer:
 
             #add product to producer's shelf, update shelf size
@@ -129,7 +129,7 @@ class Marketplace:
 
                 #remove product from shelf, add product to cart, update shelf size
                 section.remove(product)
-                self.carts[cart_id].append(product)
+                self.carts[cart_id].append({"product": product, "shelf": shelf})
                 self.shelf_sizes[shelf] += 1
 
                 self.logger.info("Product added to cart: %s", str(product))
@@ -152,12 +152,17 @@ class Marketplace:
         """
 
         #check if product is in cart, then remove it
-        if product in self.carts[cart_id]:
-            self.carts[cart_id].remove(product)
+        for obj in self.carts[cart_id]:
+            if(obj["product"] == product):
 
-            self.logger.info("Product removed from cart: %s", str(product))
+                #add product back to shelf, remove product from cart, update shelf size
+                self.carts[cart_id].remove(obj)
+                self.market[obj["shelf"]].append(product)
+                self.shelf_sizes[obj["shelf"]] -= 1
 
-            return True
+                self.logger.info("Product removed from cart: %s", str(product))
+
+                return True
 
         self.logger.info("Product not found in cart: %s", str(product))
 
@@ -178,8 +183,8 @@ class Marketplace:
         self.carts[cart_id] = []
         self.carts.pop(cart_id)
 
-        for product in order:
-            print(current_thread().name, "bought", product)
+        for obj in order:
+            print(current_thread().name, "bought", obj["product"])
 
         self.logger.info("Order placed: %s", str(order))
 
