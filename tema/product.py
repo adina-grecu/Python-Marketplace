@@ -14,6 +14,7 @@ class Product:
     """
     Class that represents a product.
     """
+
     name: str
     price: int
 
@@ -23,6 +24,7 @@ class Tea(Product):
     """
     Tea products
     """
+
     type: str
 
 
@@ -31,5 +33,6 @@ class Coffee(Product):
     """
     Coffee products
     """
+
     acidity: str
     roast_level: str

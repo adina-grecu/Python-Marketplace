@@ -44,11 +44,8 @@ class Producer(Thread):
                 products_left = product[1]
                 while products_left > 0:
                     new = self.marketplace.publish(producer_id, product[0])
-                    if new == False:
+                    if new is False:
                         time.sleep(self.republish_wait_time)
                     else:
                         products_left -= 1
                         time.sleep(product[2])
-                  
- 
-

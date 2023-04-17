@@ -38,7 +38,6 @@ class Consumer(Thread):
         super().__init__(**kwargs)
 
     def run(self):
-
         for cart in self.carts:
             cart_id = self.marketplace.new_cart()
 
@@ -49,7 +48,7 @@ class Consumer(Thread):
                     while products_left > 0:
                         new = self.marketplace.add_to_cart(cart_id, product["product"])
 
-                        if new == False:
+                        if new is False:
                             time.sleep(self.retry_wait_time)
 
                         else:
@@ -58,6 +57,6 @@ class Consumer(Thread):
                 elif product["type"] == "remove":
                     for i in range(product["quantity"]):
                         self.marketplace.remove_from_cart(cart_id, product["product"])
-                        i+=1
-                        
+                        i += 1
+
             self.marketplace.place_order(cart_id)
